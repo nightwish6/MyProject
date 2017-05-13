@@ -2,7 +2,7 @@ import sqlite3
 
 class DBmanager(object):
     def __init__(self, name_db):
-        self.conn=sqlite3.connect(name_db)
+        self.conn=sqlite3.connect('/home/admin1/GitProject/%s.sqlite'%(name_db))
         self.dbcursor=self.conn.cursor()
         self.dbcursor.execute('CREATE TABLE words (id int NOT NULL, word txt NOT NULL, PRIMARY KEY(id))')
     def insert_into(self, *values):
@@ -21,7 +21,6 @@ class DBmanager(object):
     def del_last_value(self):
         self.dbcursor.execute('DELETE FROM words WHERE id=(SELECT MAX(id) FROM words)')
         self.conn.commit()
-
 
 
 
