@@ -1,5 +1,5 @@
 import sqlite3
-
+"""Класс DBmanager, создан для хранения, обработки и работы с запросами от ЦБ РФ."""
 class DBmanager(object):
     def __init__(self, name_db):
         self.conn=sqlite3.connect('/home/admin1/GitProject/%s.sqlite'%(name_db))
@@ -49,6 +49,8 @@ if __name__=='__main__':
     #pprint(a.select_date_char_value('11/05/2017','CAD'))
     #pprint(a.select_all_date_value('03/10/2013'))
     #a.del_all_date_value('03/10/2013')
+
+
 
 
 
