@@ -183,56 +183,13 @@ class Windows_1(QWidget):
             self.error_no_data=QErrorMessage(self)
             self.error_no_data.setWindowTitle('No data')
             self.error_no_data.showMessage('No data to save')
-        else: self.message_save_data=QMessageBox.information(self, 'Save Data', 'Data saved',
+        else:
+            if len(self.request.values())<=1:
+                self.error_no_data = QErrorMessage(self)
+                self.error_no_data.setWindowTitle('No data')
+                self.error_no_data.showMessage('No data to save')
+            else: self.message_save_data=QMessageBox.information(self, 'Save Data', 'Data saved',
                                            QMessageBox.Ok)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
