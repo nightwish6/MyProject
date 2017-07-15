@@ -1,4 +1,8 @@
 import sys
+from matplotlib import pyplot as plt
+from datetime import date, datetime
+import matplotlib.dates as mdates
+import matplotlib.ticker as mtick
 from pprint import pprint
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, qApp, QAction, QTextEdit, QWidget, QLineEdit, QLabel, QPushButton, QGridLayout, QVBoxLayout, QHBoxLayout, QComboBox, QCalendarWidget
 from PyQt5.QtWidgets import QMessageBox, QErrorMessage
@@ -34,10 +38,16 @@ class Interface(QMainWindow):
         reqValAction=QAction(QIcon('cb.png'),'Learn the exchange rate', self)
         reqValAction.triggered.connect(self.req_val_act)
         reqValAction.setStatusTip('Request currency rates')
+        dynamicRateAction=QAction(QIcon('cb.png'),'Learn the course dynamics', self)
+        dynamicRateAction.triggered.connect(self.req_val_dynamic)
+        dynamicRateAction.setStatusTip('Schedule a change in the exchange rate for the period')
         self.toolbar.addAction(reqValAction)
+        self.toolbar.addAction(dynamicRateAction)
         self.toolbar.addAction(exitAction)
     def req_val_act(self):
         self.win_1=Windows_1()
+    def req_val_dynamic(self):
+        self.win_2=Windows_2()
 
 class Windows_1(QWidget):
     def __init__(self):
@@ -68,40 +78,11 @@ class Windows_1(QWidget):
         self.cal_but.clicked.connect(self.calendar)
         self.exit_but.clicked.connect(self.close)
         self.combo_val=QComboBox(self)
-        self.combo_val.addItem('AUD')
-        self.combo_val.addItem('AZN')
-        self.combo_val.addItem('GBP')
-        self.combo_val.addItem('AMD')
-        self.combo_val.addItem('BYN')
-        self.combo_val.addItem('BGN')
-        self.combo_val.addItem('BRL')
-        self.combo_val.addItem('HUF')
-        self.combo_val.addItem('HKD')
-        self.combo_val.addItem('DKK')
-        self.combo_val.addItem('USD')
-        self.combo_val.addItem('EUR')
-        self.combo_val.addItem('INR')
-        self.combo_val.addItem('KZT')
-        self.combo_val.addItem('CAD')
-        self.combo_val.addItem('KGS')
-        self.combo_val.addItem('CNY')
-        self.combo_val.addItem('MDL')
-        self.combo_val.addItem('NOK')
-        self.combo_val.addItem('PLN')
-        self.combo_val.addItem('RON')
-        self.combo_val.addItem('XDR')
-        self.combo_val.addItem('SGD')
-        self.combo_val.addItem('TJS')
-        self.combo_val.addItem('TRY')
-        self.combo_val.addItem('TMT')
-        self.combo_val.addItem('UZS')
-        self.combo_val.addItem('UAH')
-        self.combo_val.addItem('CZK')
-        self.combo_val.addItem('SEK')
-        self.combo_val.addItem('CHF')
-        self.combo_val.addItem('ZAR')
-        self.combo_val.addItem('KRW')
-        self.combo_val.addItem('JPY')
+        valutes=['AUD','AZN','GBP','AMD','BYN','BGN','BRL','HUF','HKD','DKK','USD','EUR','INR',
+                 'KZT','CAD','KGS','CNY','MDL','NOK','PLN','RON','XDR','SGD','TJS','TRY','TMT',
+                 'UZS','UAH','CZK','SEK','CHF','ZAR','KRW','JPY']
+        for valute in valutes:
+            self.combo_val.addItem(valute)
         self.combo_val.activated[str].connect(self.insert_combo_val)
         grid=QGridLayout()
         grid.setSpacing(1)
@@ -190,6 +171,82 @@ class Windows_1(QWidget):
                 self.error_no_data.showMessage('No data to save')
             else: self.message_save_data=QMessageBox.information(self, 'Save Data', 'Data saved',
                                            QMessageBox.Ok)
+
+
+
+class Windows_2(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.composition()
+
+    def composition(self):
+        self.setWindowTitle('Central Bank dynamic rates')
+        self.setGeometry(10,10,450,30)
+        self.setWindowIcon(QIcon('cb.png'))
+        self.period()
+        self.show()
+
+    def period(self):
+        self.txt_per_1 = QLineEdit(self)
+        self.txt_per_2 = QLineEdit(self)
+        self.txt_directory=QLineEdit(self)
+        self.lab_per = QLabel('Period of time:', self)
+        self.lab_code = QLabel('Currency code:', self)
+        self.send_but = QPushButton('Send')
+        self.send_but.clicked.connect(self.req_dynamic_rate)
+        self.code_but = QPushButton('Directory code')
+        grid = QGridLayout()
+        grid.setSpacing(1)
+        grid.addWidget(self.lab_per, 1, 0, 1, 1)
+        grid.addWidget(self.txt_per_1, 1, 1, 1, 1)
+        grid.addWidget(self.txt_per_2, 1, 2, 1, 1)
+        grid.addWidget(self.lab_code, 2, 0, 1, 1)
+        grid.addWidget(self.txt_directory, 2, 1, 1, 1)
+        grid.addWidget(self.code_but, 2, 2, 1, 1)
+        grid.addWidget(self.send_but, 2, 3, 1, 1)
+        self.setLayout(grid)
+
+    def req_dynamic_rate(self):
+        from cb_requests import req_dynamic_rate
+        self.dynamic_req=req_dynamic_rate(self.txt_per_1.text(),self.txt_per_2.text(),
+                                               self.txt_directory.text())
+
+        self.coordinates = dict()
+        for key in self.dynamic_req.keys():
+            if key=='ValCurs': continue
+            else:
+                self.coordinates[key]=self.dynamic_req[key]['Value']
+        self.course_schedule()
+
+    def course_schedule(self):
+        self.coordinates = dict()
+        for key in self.dynamic_req.keys():
+            if key == 'ValCurs':
+                continue
+            else:
+                self.coordinates[key] = self.dynamic_req[key]['Value']
+
+        self.xdates = [date(int(i[6:]), int(i[3:5]), int(i[0:2])) for i in list(self.coordinates.keys())]
+        self.xdates.sort()
+        self.yvalues = list()
+        for dates in self.xdates:
+            for key in self.coordinates:
+                if dates.strftime('%d.%m.%Y') == str(key):
+                    self.yvalues.append(float(self.coordinates[key].replace(',', '.')))
+        self.figure = plt.figure()
+        self.schedule= self.figure.gca()
+        self.schedule.set_title('Course schedule')
+        self.schedule.set_xlabel('Dates')
+        self.schedule.set_ylabel('Values')
+        self.schedule.xaxis.set_major_formatter(
+            mdates.DateFormatter('%d/%m/%Y'))
+        self.schedule.yaxis.set_major_formatter(
+            mtick.FormatStrFormatter('%.2f'))
+        self.schedule.plot(self.xdates, self.yvalues, 'r')
+        self.figure.autofmt_xdate()
+        plt.show()
+
+
 
 
 

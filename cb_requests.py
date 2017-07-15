@@ -31,7 +31,7 @@ def req_curr_rate(data):
 """
 
 
-def req_dinamic_rate(data1,data2,val_num):
+def req_dynamic_rate(data1,data2,val_num):
     req=requests.get('http://www.cbr.ru/scripts/XML_dynamic.asp', params={'date_req1':data1,
                                                                           'date_req2':data2,
                                                                           'VAL_NM_RQ':val_num})
@@ -47,9 +47,9 @@ def req_dinamic_rate(data1,data2,val_num):
 
 
 if __name__=='__main__':
-    a=req_curr_rate('15/06/2017')
-    b=req_dinamic_rate('01/06/2017','10/06/2017','R01235')
-    pprint(a)
+    #a=req_curr_rate('15/06/2017')
+    b=req_dynamic_rate('01/06/2017','10/06/2017','R01235')
+    #pprint(a)
     print('\n')
     pprint(b)
 
