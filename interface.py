@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, qApp, QAc
 from PyQt5.QtWidgets import QMessageBox, QErrorMessage
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QCoreApplication, QDate
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class Interface(QMainWindow):
     def __init__(self):
@@ -211,12 +212,27 @@ class Windows_2(QWidget):
         self.dynamic_req=req_dynamic_rate(self.txt_per_1.text(),self.txt_per_2.text(),
                                                self.txt_directory.text())
 
-        self.coordinates = dict()
-        for key in self.dynamic_req.keys():
-            if key=='ValCurs': continue
-            else:
-                self.coordinates[key]=self.dynamic_req[key]['Value']
+
+        self.win_3=Windows_3(self.dynamic_req)
+
+
+
+
+class Windows_3(QWidget):
+    def __init__(self, dynamic_data):
+        super().__init__()
+        self.dynamic_req=dynamic_data
+        self.composition()
+
+    def composition(self):
+        self.setWindowTitle('Shedule')
+        self.setGeometry(10,10,600,430)
+        self.setWindowIcon(QIcon('cb.png'))
         self.course_schedule()
+        grid=QGridLayout()
+        grid.addWidget(self.canvas)
+        self.setLayout(grid)
+        self.show()
 
     def course_schedule(self):
         self.coordinates = dict()
@@ -244,7 +260,9 @@ class Windows_2(QWidget):
             mtick.FormatStrFormatter('%.2f'))
         self.schedule.plot(self.xdates, self.yvalues, 'r')
         self.figure.autofmt_xdate()
-        plt.show()
+        self.canvas=FigureCanvas(self.figure)
+
+
 
 
 
