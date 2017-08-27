@@ -45,12 +45,36 @@ def req_dynamic_rate(data1,data2,val_num):
     return total
 
 
+"""Функция req_news, подключается к внешнему API сайта Центрального банка
+РФ, отправляет запрос, получает ответ в XML формате и возвращает новости из ЦБ в виде словаря.
+"""
+
+
+
+def req_news():
+    req=requests.get('http://www.cbr.ru/scripts/XML_News.asp')
+    tree=etree.fromstring(req.text)
+    total={tree.tag:tree.attrib}
+    for item in tree.findall('Item'):
+        date=item.find('Date').text
+        url=item.find('Url').text
+        title=item.find('Title').text.encode('ISO-8859-1').decode('windows-1251')
+        total[str(item.attrib['ID'])]={'Date':date,
+                                        'Url':url,
+                                        'Title':title}
+    total.pop('News')
+    return total
+
+
+
 
 if __name__=='__main__':
     #a=req_curr_rate('15/06/2017')
-    b=req_dynamic_rate('01/10/2016','10/10/2016','R01235')
+    #b=req_dynamic_rate('01/10/2016','10/10/2016','R01235')
     #pprint(a)
+    c=req_news()
+    pprint(c)
     print('\n')
-    pprint(b)
+    #pprint(b)
 
 

@@ -5,8 +5,8 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as mtick
 from pprint import pprint
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDesktopWidget, qApp, QAction, QTextEdit, QWidget, QLineEdit, QLabel, QPushButton, QGridLayout, QVBoxLayout, QHBoxLayout, QComboBox, QCalendarWidget
-from PyQt5.QtWidgets import QMessageBox, QErrorMessage, QDateEdit
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMessageBox, QErrorMessage, QDateEdit, QScrollArea, QScrollBar, QAbstractScrollArea
+from PyQt5.QtGui import QIcon, QImage, QPalette, QBrush
 from PyQt5.QtCore import QCoreApplication, QDate
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -42,13 +42,28 @@ class Interface(QMainWindow):
         dynamicRateAction=QAction(QIcon('/home/admin1/GitProject/images/cb.png'),'Learn the course dynamics', self)
         dynamicRateAction.triggered.connect(self.req_val_dynamic)
         dynamicRateAction.setStatusTip('Schedule a change in the exchange rate for the period')
+        newsAction=QAction(QIcon('/home/admin1/GitProject/images/cb.png'),'Get news', self)
+        newsAction.setStatusTip('Get news from the Central bank')
+        newsAction.triggered.connect(self.req_news)
         self.toolbar.addAction(reqValAction)
         self.toolbar.addAction(dynamicRateAction)
+        self.toolbar.addAction(newsAction)
         self.toolbar.addAction(exitAction)
     def req_val_act(self):
         self.win_1=Windows_1()
     def req_val_dynamic(self):
         self.win_2=Windows_2()
+    def req_news(self):
+        from cb_requests import req_news
+        from requests import ConnectionError
+        try:
+            req_News = req_news()
+            self.win_4 = Windows_4(req_News)
+        except ConnectionError:
+            self.error_no_connect = QErrorMessage(self)
+            self.error_no_connect.setWindowTitle('Сonnection Error')
+            self.error_no_connect.showMessage('No internet connection')
+
 
 class Windows_1(QWidget):
     def __init__(self):
@@ -106,6 +121,7 @@ class Windows_1(QWidget):
 
     def req_curr_rate(self):
         from cb_requests import req_curr_rate
+        from requests import ConnectionError
         if datetime(int(self.data.text()[6:]), int(self.data.text()[3:5]),
                    int(self.data.text()[0:2]),
                 hour=0, minute=0, second=0, microsecond=0, tzinfo=None) > datetime.now():
@@ -113,14 +129,21 @@ class Windows_1(QWidget):
             self.error_no_data.setWindowTitle('No data available')
             self.error_no_data.showMessage('You entered a date that is greater than the current date')
         else:
-            self.request=req_curr_rate(self.data.text())
-            for key in self.request:
-                if key=='ValCurs': continue
-                elif self.request[key]['CharCode']==self.combo_val.currentText():
-                    for values in self.request.values():
-                        for value in values:
-                            if value=='Date' or value=='name':continue
-                            else: self.options[value].setText(str(self.request[key][value]))
+            try:
+                self.request=req_curr_rate(self.data.text())
+                for key in self.request:
+                    if key=='ValCurs': continue
+                    elif self.request[key]['CharCode']==self.combo_val.currentText():
+                        for values in self.request.values():
+                            for value in values:
+                                if value=='Date' or value=='name':continue
+                                else: self.options[value].setText(str(self.request[key][value]))
+            except ConnectionError:
+                self.error_no_connect = QErrorMessage(self)
+                self.error_no_connect.setWindowTitle('Сonnection Error')
+                self.error_no_connect.showMessage('No internet connection')
+
+
 
     def insert_combo_val(self, combo_val):
         try:
@@ -234,16 +257,23 @@ class Windows_2(QWidget):
             self.error_no_data.showMessage('You entered the first date period, which is greater than the second date you entered')
         else:
             from cb_requests import req_dynamic_rate
+            from requests import ConnectionError
             for key in self.val_code.keys():
                 if self.combo_val_code.currentText()==str(self.val_code[key]):
-                    self.dynamic_req=req_dynamic_rate(self.txt_per_1.text(),self.txt_per_2.text(),
-                                                      str(key))
-                    self.win_3=Windows_3(self.dynamic_req)
+                    try:
+                        self.dynamic_req=req_dynamic_rate(self.txt_per_1.text(),self.txt_per_2.text(),
+                                                       str(key))
+                        self.win_3=Windows_3(self.dynamic_req)
+                    except ConnectionError:
+                        self.error_no_connect = QErrorMessage(self)
+                        self.error_no_connect.setWindowTitle('Сonnection Error')
+                        self.error_no_connect.showMessage('No internet connection')
+
 
     def save_dynamic(self):
         from db_manag import DBmanager
         from sqlite3 import OperationalError as sqlite3_OperationalError
-        self.data_base=DBmanager('valute')
+        self.data_base = DBmanager('valute')
         try: self.data_base.insert_into_table_dynamic_rate(self.dynamic_req)
         except sqlite3_OperationalError:
             self.data_base.create_table_dynamic_rate()
@@ -251,20 +281,17 @@ class Windows_2(QWidget):
             self.message_save_data = QMessageBox.information(self, 'Save Data', 'Data saved',
                                                              QMessageBox.Ok)
         except AttributeError:
-            self.error_no_data=QErrorMessage(self)
+            self.error_no_data = QErrorMessage(self)
             self.error_no_data.setWindowTitle('No data')
             self.error_no_data.showMessage('No data to save')
-        else: self.message_save_data=QMessageBox.information(self, 'Save Data', 'Data saved',
+        else: self.message_save_data = QMessageBox.information(self, 'Save Data', 'Data saved',
                                            QMessageBox.Ok)
-
-
-
 
 
 class Windows_3(QWidget):
     def __init__(self, dynamic_data):
         super().__init__()
-        self.dynamic_req=dynamic_data
+        self.dynamic_req = dynamic_data
         self.composition()
 
     def composition(self):
@@ -293,7 +320,7 @@ class Windows_3(QWidget):
                 if dates.strftime('%d.%m.%Y') == str(key):
                     self.yvalues.append(float(self.coordinates[key].replace(',', '.')))
         self.figure = plt.figure()
-        self.schedule= self.figure.gca()
+        self.schedule = self.figure.gca()
         self.schedule.set_title('Course schedule')
         self.schedule.set_xlabel('Dates')
         self.schedule.set_ylabel('Values')
@@ -303,7 +330,86 @@ class Windows_3(QWidget):
             mtick.FormatStrFormatter('%.2f'))
         self.schedule.plot(self.xdates, self.yvalues, 'r')
         self.figure.autofmt_xdate()
-        self.canvas=FigureCanvas(self.figure)
+        self.canvas = FigureCanvas(self.figure)
+
+
+
+class Windows_4(QWidget):
+    def __init__(self, req_News):
+        super().__init__()
+        self.news = req_News
+        self.composition()
+
+
+    def composition(self):
+        self.setWindowTitle('Central Bank News')
+        self.setGeometry(10, 10, 270, 650)
+        self.setWindowIcon(QIcon('/home/admin1/GitProject/images/cb.png'))
+        self.news_input()
+        self.show()
+
+    def news_input(self):
+        self.lab_all = QLabel('All news:', self)
+        self.lab_by_date = QLabel('News by date:', self)
+        self.txt_all = QLineEdit(self)
+        self.exit_but = QPushButton('Exit')
+        self.find_but=QPushButton('Find')
+        self.cal_but=QPushButton('Calendar')
+        self.cal_but.clicked.connect(self.calendar)
+        self.find_but.clicked.connect(self.find_news)
+        self.date = QDateEdit(self)
+        self.date.setDisplayFormat('dd/MM/yyyy')
+        self.scroll_area=QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setVerticalScrollBarPolicy(2)
+        self.scroll_area.setHorizontalScrollBarPolicy(2)
+        grid = QGridLayout()
+        grid.setSpacing(1)
+        grid.addWidget(self.lab_all, 1, 0, 1, 1)
+        grid.addWidget(self.txt_all, 1, 1, 1, 1)
+        grid.addWidget(self.date, 2, 1, 1, 1)
+        grid.addWidget(self.cal_but, 2, 2, 1, 1)
+        grid.addWidget(self.find_but, 2, 3, 1, 1)
+        grid.addWidget(self.lab_by_date, 2, 0, 1, 1)
+        grid.addWidget(self.scroll_area, 3, 0, 1, 6)
+        grid.addWidget(self.exit_but, 5, 5, 1, 1)
+        self.setLayout(grid)
+        self.txt_all.setText(str(len(self.news.keys())))
+
+    def calendar(self):
+        self.cal=QCalendarWidget()
+        self.cal.setGridVisible(True)
+        self.cal.setGeometry(300,300,450,200)
+        self.cal.setWindowIcon(QIcon('/home/admin1/GitProject/images/cb.png'))
+        self.cal.setWindowTitle('Calendar')
+        self.cal.show()
+        self.cal.clicked[QDate].connect(self.show_date)
+
+    def show_date(self):
+        self.date.setDate(self.cal.selectedDate())
+
+    def find_news(self):
+        self.grid_scroll = QGridLayout()
+        self.scroll_content = QWidget()
+        self.scroll_content.setLayout(self.grid_scroll)
+        self.scroll_area.setWidget(self.scroll_content)
+        count=1
+        for item in self.news.keys():
+          if self.date.text().replace('/','.')==str(self.news[item]['Date']):
+              vallue=QTextEdit((str(self.news[item]['Title'])))
+              self.grid_scroll.addWidget(vallue, count, 0, 1, 1)
+              count+=1
+
+
+
+
+
+
+
+
+
+
+
 
 
 
