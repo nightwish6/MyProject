@@ -1,8 +1,8 @@
 import sqlite3
 """Класс DBmanager, создан для хранения, обработки и работы с запросами от ЦБ РФ."""
 class DBmanager(object):
-    def __init__(self, name_db):
-        self.conn=sqlite3.connect('/home/admin1/GitProject/%s.sqlite'%(name_db))
+    def __init__(self, way_db, name_db):
+        self.conn=sqlite3.connect(way_db %(name_db))
         self.dbcursor=self.conn.cursor()
     def create_table(self):
         self.dbcursor.execute('CREATE TABLE valute (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,'
@@ -60,7 +60,9 @@ class DBmanager(object):
 
 
 if __name__=='__main__':
-    a=DBmanager('valute')
+    import yaml
+    settings=yaml.load(open('settings.yaml'))
+    a=DBmanager(settings['way'],'valute')
     from cb_requests import req_curr_rate, req_dynamic_rate
     #b=req_curr_rate('03/10/2013')
     c = req_dynamic_rate('01/10/2016', '10/10/2016', 'R01235')
@@ -73,7 +75,7 @@ if __name__=='__main__':
     #a.del_all_date_value('03/10/2013')
     #a.create_table_dynamic_rate()
     #pprint(c)
-    a.insert_into_table_dynamic_rate(c)
+    #a.insert_into_table_dynamic_rate(c)
 
 
 

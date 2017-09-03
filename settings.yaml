@@ -1,2 +1,8 @@
 #Настройки для приложения
 way: /home/admin1/GitProject/%s.sqlite
+panel: /home/admin1/GitProject/images/cb.png
+toolbar:
+        dollar: /home/admin1/GitProject/images/dollar.png
+        dynamic: /home/admin1/GitProject/images/dynamic.png
+        news: /home/admin1/GitProject/images/news.png
+        exit: /home/admin1/GitProject/images/exit.png
